@@ -1,4 +1,4 @@
-# A php class to extract all the images from a Word DOCX document and save them as separate image files
+# A php class to extract all the text from a Word DOCX document and save it as a text array
 
 ## Description
 
