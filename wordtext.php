@@ -61,9 +61,6 @@ class WordTEXT
 		$_xml = 'word/document.xml';
 		$_xml_rels = 'word/_rels/document.xml.rels';
 		$_xml_numb = 'word/numbering.xml';
-		$_xml_styles = 'word/styles.xml';
-		$_xml_foot = 'word/footnotes.xml';
-		$_xml_end = 'word/endnotes.xml';
 		
 		if (true === $zip->open($filename)) {
 			//Get the main word document file
@@ -74,32 +71,12 @@ class WordTEXT
 			if (($index = $zip->locateName($_xml_rels)) !== false) {
 				$xml_rels = $zip->getFromIndex($index);
 			}
-			//Get the list references from the word numbering file
-			if (($index = $zip->locateName($_xml_numb)) !== false) {
-				$xml_numb = $zip->getFromIndex($index);
-			}
-			//Get the style references from the word styles file
-			if (($index = $zip->locateName($_xml_styles)) !== false) {
-				$xml_styles = $zip->getFromIndex($index);
-			}
-			//Get the footnotes from the word fonts file
-			if (($index = $zip->locateName($_xml_foot)) !== false) {
-				$xml_foot = $zip->getFromIndex($index);
-			}
-			//Get the endnotes from the word fonts file
-			if (($index = $zip->locateName($_xml_end)) !== false) {
-				$xml_end = $zip->getFromIndex($index);
-			}
 			$zip->close();
 		} else die('non zip file');
 
 		$enc = mb_detect_encoding($xml);
 		$this->setXmlParts($this->doc_xml, $xml, $enc);
 		$this->setXmlParts($this->rels_xml, $xml_rels, $enc);
-		$this->setXmlParts($this->numb_xml, $xml_numb, $enc);
-		$this->setXmlParts($this->styles_xml, $xml_styles, $enc);
-		$this->setXmlParts($this->foot_xml, $xml_foot, $enc);
-		$this->setXmlParts($this->end_xml, $xml_end, $enc);
 		
 		if($this->debug) {
 			echo "XML File : word/document.xml<br>";
@@ -110,48 +87,51 @@ class WordTEXT
 			echo "<textarea style='width:100%; height: 200px;'>";
 			echo $this->rels_xml->saveXML();
 			echo "</textarea>";
-			echo "<br>XML File : word/numbering.xml<br>";
-			echo "<textarea style='width:100%; height: 200px;'>";
-			echo $this->numb_xml->saveXML();
-			echo "</textarea>";
-			echo "<br>XML File : word/styles.xml<br>";
-			echo "<textarea style='width:100%; height: 200px;'>";
-			echo $this->styles_xml->saveXML();
-			echo "</textarea>";
-			echo "<br>XML File : word/footnotes.xml<br>";
-			echo "<textarea style='width:100%; height: 200px;'>";
-			echo $this->foot_xml->saveXML();
-			echo "</textarea>";
-			echo "<br>XML File : word/endnotes.xml<br>";
-			echo "<textarea style='width:100%; height: 200px;'>";
-			echo $this->end_xml->saveXML();
-			echo "</textarea>";
 		}
 	}
 
 
 
 	/**
-	 * Looks up the footnotes XML file and returns the footnotes if any exist
+	 * Looks to see if there is a footnotes XML file and returns the footnotes if any exist
 	 * 
 	 * @returns Array - All the footnotes 
 	 */
 	private function footnotes()
 	{
-		$reader1 = new XMLReader();
-		$reader1->XML($this->foot_xml->saveXML());
-		$Ftext = array();
-		$hyper = '';
-		while ($reader1->read()) {
-		// look for required style
-			$znum = 1;
-			if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:footnote') { //Get footnote
-				$Footnum = $reader1->getAttribute("w:id");
-				$st2 = new XMLReader;
-				$st2->xml(trim($reader1->readOuterXML()));
-				while ($st2->read()) {
-					if ($st2->name == 'w:t') {
-						$Ftext[$Footnum] .= htmlentities($st2->expand()->textContent);
+		$zip = new ZipArchive();
+		$_xml_foot = 'word/footnotes.xml';
+		if (true === $zip->open($this->file)) {
+			//Get the footnotes from the word footnotes file file
+			if (($index = $zip->locateName($_xml_foot)) !== false) {
+				$xml_foot = $zip->getFromIndex($index);
+			}
+			$zip->close();
+		}
+		if ($xml_foot){ // if the footnotes.xml file exists parse it
+			$enc = mb_detect_encoding($_xml_foot);
+			$this->setXmlParts($foot_xml, $xml_foot, $enc);
+			if($this->debug) {
+				echo "<br>XML File : word/footnotes.xml<br>";
+				echo "<textarea style='width:100%; height: 200px;'>";
+				echo $foot_xml->saveXML();
+				echo "</textarea>";
+			}
+			$reader1 = new XMLReader();
+			$reader1->XML($foot_xml->saveXML());
+			$Ftext = array();
+			$hyper = '';
+			while ($reader1->read()) {
+			// look for required style
+				$znum = 1;
+				if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:footnote') { //Get footnote
+					$Footnum = $reader1->getAttribute("w:id");
+					$st2 = new XMLReader;
+					$st2->xml(trim($reader1->readOuterXML()));
+					while ($st2->read()) {
+						if ($st2->name == 'w:t') {
+							$Ftext[$Footnum] .= htmlentities($st2->expand()->textContent);
+						}
 					}
 				}
 					
@@ -162,25 +142,45 @@ class WordTEXT
 
 
 	/**
-	 * Looks up the endnotes XML file and returns the endnotes if any exist
+	 * Checks to see if there is an endnotes XML file and returns the endnotes if any exist
 	 * 
 	 * @returns Array - All the endnotes
 	 */
 	private function endnotes()
 	{
-		$reader1 = new XMLReader();
-		$reader1->XML($this->end_xml->saveXML());
-		$Etext = array();
-		while ($reader1->read()) {
-		// look for required style
-			$znum = 1;
-			if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:endnote') { //Get endnote
-				$Endnum = $reader1->getAttribute("w:id");
-				$st2 = new XMLReader;
-				$st2->xml(trim($reader1->readOuterXML()));
-				while ($st2->read()) {
-					if ($st2->name == 'w:t') {
-						$Etext[$Endnum] .= htmlentities($st2->expand()->textContent);
+		$zip = new ZipArchive();
+		$_xml_end = 'word/endnotes.xml';
+		if (true === $zip->open($this->file)) {
+			//Get the endnotes from the endnotes file
+			if (($index = $zip->locateName($_xml_end)) !== false) {
+				$xml_end = $zip->getFromIndex($index);
+			}
+			$zip->close();
+		}
+		if ($xml_end){ // if the endnotes.xml file exists parse it
+			$enc = mb_detect_encoding($_xml_end);
+			$this->setXmlParts($end_xml, $xml_end, $enc);
+			if($this->debug) {
+				echo "<br>XML File : word/endnotes.xml<br>";
+				echo "<textarea style='width:100%; height: 200px;'>";
+				echo $end_xml->saveXML();
+				echo "</textarea>";
+			}
+		
+			$reader1 = new XMLReader();
+			$reader1->XML($end_xml->saveXML());
+			$Etext = array();
+			while ($reader1->read()) {
+			// look for required style
+				$znum = 1;
+				if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:endnote') { //Get endnote
+					$Endnum = $reader1->getAttribute("w:id");
+					$st2 = new XMLReader;
+					$st2->xml(trim($reader1->readOuterXML()));
+					while ($st2->read()) {
+						if ($st2->name == 'w:t') {
+							$Etext[$Endnum] .= htmlentities($st2->expand()->textContent);
+						}
 					}
 				}
 					
@@ -198,8 +198,28 @@ class WordTEXT
 	 */
 	private function findstyles($style)
 	{
+		$zip = new ZipArchive();
+		$_xml_styles = 'word/styles.xml';
+		if (true === $zip->open($this->file)) {
+			//Get the style references from the word styles file
+			if (($index = $zip->locateName($_xml_styles)) !== false) {
+				$xml_styles = $zip->getFromIndex($index);
+			}
+			$zip->close();
+		}
+
+		$enc = mb_detect_encoding($xml_styles);
+		$this->setXmlParts($styles_xml, $xml_styles, $enc);
+		if($this->debug) {
+			echo "<br>XML File : word/styles.xml<br>";
+			echo "<textarea style='width:100%; height: 200px;'>";
+			echo $styles_xml->saveXML();
+			echo "</textarea>";
+		}
+
+		$Rfont = $this->findfonts();
 		$reader1 = new XMLReader();
-		$reader1->XML($this->styles_xml->saveXML());
+		$reader1->XML($styles_xml->saveXML());
 		$FontTheme = '';
 		$parnum = '';
 		while ($reader1->read()) {
@@ -335,9 +355,32 @@ class WordTEXT
 		}
 		
 		if ($ListnumId){
+			if (!$numb_xml){
+				$zip = new ZipArchive();
+				$_xml_numb = 'word/numbering.xml';
+		
+				if (true === $zip->open($this->file)) {
+					//Get the list references from the word numbering file
+				if (($index = $zip->locateName($_xml_numb)) !== false) {
+						$xml_numb = $zip->getFromIndex($index);
+					}
+					$zip->close();
+				}
+
+				$enc = mb_detect_encoding($xml_numb);
+				$this->setXmlParts($numb_xml, $xml_numb, $enc);
+		
+				if($this->debug) {
+					echo "<br>XML File : word/numbering.xml<br>";
+					echo "<textarea style='width:100%; height: 200px;'>";
+					echo $numb_xml->saveXML();
+					echo "</textarea>";
+				}
+			}
+			
 			// look for the List reference number of this element
 			$reader1 = new XMLReader();
-			$reader1->XML($this->numb_xml->saveXML());
+			$reader1->XML($numb_xml->saveXML());
 			while ($reader1->read()) {
 				if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:num' && $reader1->getAttribute("w:numId") == $ListnumId) {
 					$st1 = new XMLReader;
