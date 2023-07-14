@@ -36,8 +36,8 @@ $text = $rt->readDocument('FILENAME');
 
 ## Update Notes
 
-Version 1.0.3 - Clearance of some bugs which prevented the script working with some dosc files. Also clearance of php warning messages
+Version 1.0.2 - Clearance of some bugs which prevented the script working with some dosc files. Also clearance of php warning messages
 
-Version 1.0.2 - Updated to now work up to at least PHP 8.1
+Version 1.0.1 - Updated to now work up to at least PHP 8.1
 
-Version 1.0.1 - Original version
+Version 1.0.0 - Original version
