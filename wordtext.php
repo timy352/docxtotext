@@ -454,7 +454,19 @@ class WordTEXT
 				} else if ($Rnumfmt[$Lcount] == 'upperRoman'){
 					$LnumA[$Lcount] = $LNfirst.strtoupper($this->numberToRoman($LnumA[$Lcount])).$LNlast;
 				} else if ($Rnumfmt[$Lcount] == 'bullet'){
-					$LnumA[$Lcount] = "•";
+					if (mb_ord($Rlvltxt[$Lcount]) == 61692){
+						$LnumA[$Lcount] = "✓";
+					} else if (mb_ord($Rlvltxt[$Lcount]) == 61623){
+						$LnumA[$Lcount] = "•";
+					} else if (mb_ord($Rlvltxt[$Lcount]) == 61607){
+						$LnumA[$Lcount] = "◾";
+					} else if (mb_ord($Rlvltxt[$Lcount]) == 61656){
+						$LnumA[$Lcount] = "➢";
+					} else if (mb_ord($Rlvltxt[$Lcount]) == 111){
+						$LnumA[$Lcount] = $Rlvltxt[$Lcount];
+					} else {
+						$LnumA[$Lcount] = "◾";
+					}
 				} else {
 					$LnumA[$Lcount] = $LNfirst.$LnumA[$Lcount].$LNlast;
 				}
