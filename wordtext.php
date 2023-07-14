@@ -108,7 +108,8 @@ class WordTEXT
 			}
 			$zip->close();
 		}
-		if ($xml_foot){ // if the footnotes.xml file exists parse it
+		$Ftext = array();
+		if (isset($xml_foot)){ // if the footnotes.xml file exists parse it
 			$enc = mb_detect_encoding($_xml_foot);
 			$this->setXmlParts($foot_xml, $xml_foot, $enc);
 			if($this->debug) {
@@ -119,13 +120,13 @@ class WordTEXT
 			}
 			$reader1 = new XMLReader();
 			$reader1->XML($foot_xml->saveXML());
-			$Ftext = array();
 			$hyper = '';
 			while ($reader1->read()) {
 			// look for required style
 				$znum = 1;
 				if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:footnote') { //Get footnote
 					$Footnum = $reader1->getAttribute("w:id");
+					$Ftext[$Footnum] = '';
 					$st2 = new XMLReader;
 					$st2->xml(trim($reader1->readOuterXML()));
 					while ($st2->read()) {
@@ -157,7 +158,8 @@ class WordTEXT
 			}
 			$zip->close();
 		}
-		if ($xml_end){ // if the endnotes.xml file exists parse it
+		$Etext = array();
+		if (isset($xml_end)){ // if the endnotes.xml file exists parse it
 			$enc = mb_detect_encoding($_xml_end);
 			$this->setXmlParts($end_xml, $xml_end, $enc);
 			if($this->debug) {
@@ -169,12 +171,12 @@ class WordTEXT
 		
 			$reader1 = new XMLReader();
 			$reader1->XML($end_xml->saveXML());
-			$Etext = array();
 			while ($reader1->read()) {
 			// look for required style
 				$znum = 1;
 				if ($reader1->nodeType == XMLREADER::ELEMENT && $reader1->name == 'w:endnote') { //Get endnote
 					$Endnum = $reader1->getAttribute("w:id");
+					$Etext[$Endnum] = '';
 					$st2 = new XMLReader;
 					$st2->xml(trim($reader1->readOuterXML()));
 					while ($st2->read()) {
@@ -217,7 +219,6 @@ class WordTEXT
 			echo "</textarea>";
 		}
 
-		$Rfont = $this->findfonts();
 		$reader1 = new XMLReader();
 		$reader1->XML($styles_xml->saveXML());
 		$FontTheme = '';
@@ -334,7 +335,7 @@ class WordTEXT
 		$reader->XML($node);
 		$PSret= array();
 		$LnumA = array();
-		$ListnumId = '';
+		$ListnumId = $Listlevel = $Lnum = '';
 		
 		while ($reader->read()){
 			if($reader->name == "w:pStyle" && $reader->hasAttributes ) {
@@ -355,7 +356,7 @@ class WordTEXT
 		}
 		
 		if ($ListnumId){
-			if (!$numb_xml){
+			if (!isset($numb_xml)){
 				$zip = new ZipArchive();
 				$_xml_numb = 'word/numbering.xml';
 		
@@ -394,7 +395,7 @@ class WordTEXT
 			}
 			// look for the List details of this element
 			$reader2 = new XMLReader();
-			$reader2->XML($this->numb_xml->saveXML());
+			$reader2->XML($numb_xml->saveXML());
 			while ($reader2->read()) {
 				if ($reader2->nodeType == XMLREADER::ELEMENT && $reader2->name == 'w:abstractNum' && $reader2->getAttribute("w:abstractNumId") == $ListAbsNo) {
 					$st2 = new XMLReader;
@@ -427,6 +428,9 @@ class WordTEXT
 				$LNfirst = '';
 			}
 			$LNlast = substr($Rlvltxt[$Listlevel],-1); // The last character of a list number
+			if (!isset($Listcount[$ListnumId][$Listlevel])){
+				$Listcount[$ListnumId][$Listlevel] = '';
+			}
 			if ($Listcount[$ListnumId][$Listlevel] == ''){ // Get the list number of the list element
 				$Listcount[$ListnumId][$Listlevel] = $Rstart[$Listlevel];
 				$Listcount[$ListnumId][$Listlevel + 1] = '';
@@ -586,11 +590,11 @@ class WordTEXT
 			
 		}
 		$Foot = $this->footnotes(); // Get any Footnotes in the document
-		if ($Foot[1]) {
+		if (isset($Foot[1])){
 			$text[$para] = "FOOTNOTES";
 			$para++;
 			$Fcount = 1;
-			while ($Foot[$Fcount]){
+			while (isset($Foot[$Fcount])){
 				$Ftext = "[".$Fcount."] ".$Foot[$Fcount];
 				$Tlen = strlen($Ftext);
 				if ($Tlen > $maxlen){
@@ -603,11 +607,11 @@ class WordTEXT
 		}
 		
 		$Endn = $this->endnotes(); //Get any Endnotes in the document
-		if ($Endn[1]) {
+		if (isset($Endn[1])){
 			$text[$para] = "ENDNOTES";
 			$para++;
 			$Fcount = 1;
-			while ($Endn[$Fcount]){
+			while (isset($Endn[$Fcount])){
 				$Etext = "[".$this->numberToRoman($Fcount)."] ".$Endn[$Fcount];
 				$Tlen = strlen($Etext);
 				if ($Tlen > $maxlen){
